@@ -34,18 +34,20 @@ app.get('/health', (req, res) => {
     res.json({ status: 'ok', service: 'GoOptimize AI' });
 });
 
-// サーバー起動
-async function start() {
-    try {
-        await initDB();
-        app.listen(PORT, '0.0.0.0', () => {
-            console.log(`🎯 GoOptimize AI Server is LIVE and listening on port ${PORT}`);
-            console.log(`Health check available at: http://localhost:${PORT}/health`);
-        });
-    } catch (error) {
-        console.error('Failed to start server:', error);
-        process.exit(1);
-    }
-}
+// データベース初期化
+initDB().then(() => {
+    console.log('✅ Database preparation sequence completed');
+}).catch(dbErr => {
+    console.error('❌ Database failed to initialize, but server will continue to run:', dbErr.message);
+});
 
-start();
+// サーバー起動（真っ先に実行してRenderのポートスキャンを通す）
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`
+    ================================================
+    🚀 GoOptimize AI Server is UP and RUNNING!
+    📍 Port: ${PORT}
+    🌐 Binding: 0.0.0.0
+    ================================================
+    `);
+});
