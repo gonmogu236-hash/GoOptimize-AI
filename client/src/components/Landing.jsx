@@ -124,7 +124,7 @@ export default function Landing({ onStart }) {
                                         <tr><th>代表責任者</th><td>山先 直子</td></tr>
                                         <tr><th>所在地</th><td>請求により遅滞なく提供します</td></tr>
                                         <tr><th>メールアドレス</th><td>gonmogu236@gmail.com</td></tr>
-                                        <tr><th>電話番号</th><td>請求により遅滞なく提供します</td></tr>
+                                        <tr><th>電話番号</th><td>090-3124-0502</td></tr>
                                         <tr><th>販売価格</th><td>各商品ページ（解析ダッシュボード）に表示</td></tr>
                                         <tr><th>商品代金以外の必要料金</th><td>なし（インターネット接続費用は別途必要）</td></tr>
                                         <tr><th>支払方法</th><td>クレジットカード（Stripe決済）</td></tr>
