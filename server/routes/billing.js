@@ -3,11 +3,20 @@ import Stripe from 'stripe';
 
 const router = express.Router();
 
-// 本番環境・テスト環境では環境変数からシークレットキーを読み込む
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+/**
+ * Stripeのインスタンスを必要時に作成（起動時のクラッシュを防止）
+ */
+function getStripe() {
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (!key) {
+        throw new Error('STRIPE_SECRET_KEY is not set in environment variables');
+    }
+    return new Stripe(key);
+}
 
 router.post('/create-checkout-session', async (req, res) => {
     try {
+        const stripe = getStripe();
         // Stripe Checkout セッションの作成
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],

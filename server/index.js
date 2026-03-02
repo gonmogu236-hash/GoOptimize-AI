@@ -14,6 +14,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+console.log('🚀 GoOptimize AI Server is starting...');
+console.log('Environment:', {
+    NODE_ENV: process.env.NODE_ENV || 'development',
+    PORT: PORT
+});
+
 // ミドルウェア
 app.use(cors());
 app.use(express.json({ limit: '50mb' })); // Changed limit from '5mb' to '50mb'
@@ -32,8 +38,9 @@ app.get('/health', (req, res) => {
 async function start() {
     try {
         await initDB();
-        app.listen(PORT, () => {
-            console.log(`🎯 GoOptimize AI Server running on http://localhost:${PORT}`);
+        app.listen(PORT, '0.0.0.0', () => {
+            console.log(`🎯 GoOptimize AI Server is LIVE and listening on port ${PORT}`);
+            console.log(`Health check available at: http://localhost:${PORT}/health`);
         });
     } catch (error) {
         console.error('Failed to start server:', error);
