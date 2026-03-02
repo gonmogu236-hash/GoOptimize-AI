@@ -6,6 +6,7 @@ import DiagnosticReport from './DiagnosticReport';
 import LearningPlan from './LearningPlan';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import { createCheckoutSession } from '../utils/api';
 
 export default function Dashboard({ data, onNewAnalysis }) {
     const [activeTab, setActiveTab] = useState('overview');
@@ -24,13 +25,12 @@ export default function Dashboard({ data, onNewAnalysis }) {
 
     const handleUnlockPremium = async () => {
         try {
-            const res = await fetch('/api/billing/create-checkout-session', { method: 'POST' });
-            const data = await res.json();
+            const data = await createCheckoutSession();
             if (data.url) {
                 window.location.href = data.url;
             }
         } catch (e) {
-            alert("決済システムとの通信に失敗しました。");
+            alert(e.message || "決済システムとの通信に失敗しました。");
         }
     };
 
