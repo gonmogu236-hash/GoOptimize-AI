@@ -1018,3 +1018,135 @@ body {
   color: var(--text-muted);
   font-size: 0.8rem;
 }
+/* ===== フッターと法的表記モーダル ===== */
+.footer {
+  padding: 48px 32px;
+  background: rgba(10, 14, 26, 0.5);
+  border-top: 1px solid var(--border-color);
+  text-align: center;
+  margin-top: 80px;
+}
+
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 16px;
+}
+
+.footer-links button {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  text-decoration: underline;
+}
+
+.footer-links button:hover {
+  color: var(--accent-primary);
+}
+
+.footer-copy {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* モーダル */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+}
+
+.modal-content {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glow);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 700px;
+  max-height: 85vh;
+  overflow-y: auto;
+  position: relative;
+  padding: 40px;
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
+}
+
+.modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.modal-close:hover {
+  color: var(--text-primary);
+}
+
+.legal-doc h2 {
+  font-size: 1.5rem;
+  margin-bottom: 24px;
+  color: var(--accent-primary);
+}
+
+.legal-doc h3 {
+  font-size: 1.1rem;
+  margin-top: 24px;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+}
+
+.legal-doc p {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  line-height: 1.8;
+}
+
+.legal-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+}
+
+.legal-table th, .legal-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border-color);
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.legal-table th {
+  width: 35%;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.legal-table td {
+  color: var(--text-primary);
+}
+
+@media (max-width: 600px) {
+  .footer-links {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .modal-content {
+    padding: 24px;
+  }
+}

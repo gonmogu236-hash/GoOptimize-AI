@@ -1,4 +1,10 @@
+import { useState } from 'react';
+
 export default function Landing({ onStart }) {
+    const [modal, setModal] = useState(null);
+
+    const closeModal = () => setModal(null);
+
     return (
         <>
             {/* ヒーローセクション */}
@@ -93,6 +99,58 @@ export default function Landing({ onStart }) {
                     </div>
                 </div>
             </section>
+
+            {/* フッター */}
+            <footer className="footer">
+                <div className="footer-links">
+                    <button onClick={() => setModal('tokusho')}>特定商取引法に基づく表記</button>
+                    <button onClick={() => setModal('privacy')}>プライバシーポリシー</button>
+                </div>
+                <p className="footer-copy">&copy; 2026 GoOptimize AI. All rights reserved.</p>
+            </footer>
+
+            {/* モーダル */}
+            {modal && (
+                <div className="modal-overlay" onClick={closeModal}>
+                    <div className="modal-content" onClick={e => e.stopPropagation()}>
+                        <button className="modal-close" onClick={closeModal}>&times;</button>
+
+                        {modal === 'tokusho' && (
+                            <div className="legal-doc">
+                                <h2>特定商取引法に基づく表記</h2>
+                                <table className="legal-table">
+                                    <tbody>
+                                        <tr><th>販売業者名</th><td>山先 直子（屋号：GoOptimize AI）</td></tr>
+                                        <tr><th>代表責任者</th><td>山先 直子</td></tr>
+                                        <tr><th>所在地</th><td>請求により遅滞なく提供します</td></tr>
+                                        <tr><th>メールアドレス</th><td>gonmogu236@gmail.com</td></tr>
+                                        <tr><th>販売価格</th><td>各商品ページ（解析ダッシュボード）に表示</td></tr>
+                                        <tr><th>商品代金以外の必要料金</th><td>なし（インターネット接続費用は別途必要）</td></tr>
+                                        <tr><th>支払方法</th><td>クレジットカード（Stripe決済）</td></tr>
+                                        <tr><th>商品の引渡時期</th><td>決済完了後、即座に機能が解放されます</td></tr>
+                                        <tr><th>返品・キャンセルについて</th><td>デジタルコンテンツの性質上、決済後の返金・キャンセルはお受けできません</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+
+                        {modal === 'privacy' && (
+                            <div className="legal-doc">
+                                <h2>プライバシーポリシー</h2>
+                                <p>GoOptimize AI（以下「当サービス」）は、お客様の個人情報を適切に保護することを重要な責務と考え、以下の通りプライバシーポリシーを定めます。</p>
+                                <h3>1. 収集する情報</h3>
+                                <p>当サービスでは、棋譜解析データの保存、および決済処理の過程で、メールアドレス、決済情報（Stripeが処理）、アップロードされたSGFデータを収集します。</p>
+                                <h3>2. 利用目的</h3>
+                                <p>収集した情報は、解析機能の提供、決済の完了、およびユーザーサポートの目的にのみ利用します。</p>
+                                <h3>3. 第三者提供</h3>
+                                <p>法令に基づく場合を除き、お客様の同意なく個人情報を第三者に提供することはありません。決済処理については、Stripe, Inc. に委託します。</p>
+                                <h3>4. 安全管理</h3>
+                                <p>収集した情報の漏えい、滅失の防止に努め、適切な安全管理措置を講じます。</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </>
     );
 }
