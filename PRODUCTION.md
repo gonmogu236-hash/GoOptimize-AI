@@ -1,71 +1,97 @@
-# GoOptimize AI - 本番公開（デプロイ）ガイド
+# GoOptimize AI - 本番公開（デプロイ）最終ガイド
 
-このドキュメントでは、開発した GoOptimize AI を Web 上に公開し、実際の収益化（Stripe）を開始するための手順を説明します。
-
----
-
-## 1. 必要なアカウントの準備
-本番公開には以下のサービスのアカウント（無料プランでOK）が必要です：
-
-- **GitHub**: ソースコードの管理とデプロイ連携に使用。
-- **Vercel**: フロントエンド（React）のホスティングに使用。
-- **Render** (または Fly.io/Railway): バックエンド（Express API）のホスティングに使用。
-- **Stripe**: 決済処理に使用。
+このドキュメントは、GoOptimize AI を Render、Vercel、Stripe を使用して実際に公開し、運用するための全手順をまとめたものです。実際のトラブルシューティングに基づいた最新の設定が含まれています。
 
 ---
 
-## 2. Stripe の本番設定
-1. [Stripe ダッシュボード](https://dashboard.stripe.com/) にログイン。
-2. **APIキー** を取得：
-   - `STRIPE_SECRET_KEY` (シークレットキー): バックエンドで使用。
-   - `VITE_STRIPE_PUBLISHABLE_KEY` (公開可能キー): フロントエンドで使用（現在はモックのため省略可）。
-3. **Webhook の設定** (将来的な拡張時):
-   - 決済完了をサーバーに通知するために Webhook エンドポイントを設定します。
+## 1. インフラ構成とサービス
+- **Frontend**: [Vercel](https://vercel.com/) (React / Vite)
+- **Backend API**: [Render](https://render.com/) (Node.js / Express)
+- **Database**: SQLite (sql.js) ※Render 上の `/data` ディレクトリに保存
+- **Payment**: [Stripe](https://stripe.com/) (Checkout リダイレクト方式)
 
 ---
 
-## 3. バックエンドのデプロイ (Render)
-1. **GitHub にリポジトリを作成**し、コードをプッシュします。
-2. Render で **New -> Web Service** を選択。
-3. リポジトリを連携し、以下の設定を入力：
-   - **Environment**: `Node`
-   - **Build Command**: `npm install`
-   - **Start Command**: `node index.js`
-   - **Environment Variables**: 以下の変数を設定。
+## 2. バックエンドのデプロイ (Render)
 
-### サーバー側の `.env` 設定 (Render の設定画面で入力)
-```env
-PORT=3001
-STRIPE_SECRET_KEY=sk_live_... (取得したキー)
-DATABASE_URL=... (将来的に PostgreSQL を使う場合)
-```
+Render の **Web Service** として構築します。
 
----
+### 基本設定 (Settings)
+- **Name**: `go-optimize-api` (任意)
+- **Root Directory**: `server` （**重要**: ここを `server` にしないと起動しません）
+- **Runtime**: `Node`
+- **Build Command**: `npm install`
+- **Start Command**: `node index.js` （**重要**: `npm install` と間違えないよう注意）
 
-## 4. フロントエンドのデプロイ (Vercel)
-1. Vercel で **Add New -> Project** を選択。
-2. リポジトリを連携。
-3. **Root Directory**: `client` を指定。
-4. **Environment Variables**:
-   - `VITE_API_URL`: Render で公開したバックエンドの URL (例: `https://go-optimize-api.onrender.com`)
+### 環境変数 (Environment Variables)
+Render の管理画面で以下の設定を追加してください。
+- `STRIPE_SECRET_KEY`: `sk_live_...` (本番用) または `sk_test_...` (テスト用)
+- `PORT`: `3001`
+- `NODE_ENV`: `production`
 
 ---
 
-## 5. データベースの移行
-現在は SQLite (`go_optimize.db`) を使用していますが、Render 等の無料プランではファイル保存が永続化されない場合があります。
-**推奨**: [Supabase](https://supabase.com/) 等の無料 PostgreSQL データベースを作成し、`DATABASE_URL` を設定することで、データを安全に保持できます。
+## 3. フロントエンドのデプロイ (Vercel)
+
+Vercel の **Project** として構築します。
+
+### 基本設定
+- **Root Directory**: `client` を指定。
+- **Framework Preset**: `Vite`
+
+### 環境変数 (Environment Variables)
+- **Key**: `VITE_API_URL`
+- **Value**: `https://go-optimize-api.onrender.com` (Render で発行された URL)
+- **注意**: **Production, Preview, Development すべてにチェックを入れること。**
+
+### 再デプロイの手順 (設定変更時)
+環境変数を追加・変更した後は、必ず再デプロイが必要です。
+1. `Deployments` タブを開く。
+2. 最新のデプロイの右端 `...` をクリック。
+3. `Redeploy` を選択。
 
 ---
 
-## 6. あなたが次に行うべきこと
-1. **GitHub へのプッシュ**:
-   - ターミナルで `git push origin main` を実行（リモートURL設定後）。
-2. **環境変数の入力**:
-   - 上記ガイドに従い、各サービスの管理画面で API キーを入力してください。
-3. **ドメインの設定** (任意):
-   - お持ちの独自ドメインを Vercel に紐付けることで、プロフェッショナルな URL で公開できます。
+## 4. Stripe 決済と法的対応 (重要)
+
+Stripe の審査を通過し、実際に収益化するための設定です。
+
+### 商品の登録
+1. Stripe ダッシュボードで「商品」を追加。
+2. 名前: `GoOptimize AI プレミアム解析`
+3. 料金: `300 JPY` (1回限り)
+
+### 特定商取引法に基づく表記
+日本の法律および Stripe の審査上、以下の情報をサイトのフッターから閲覧可能にする必要があります（本アプリではモーダル形式で実装済み）。
+- **販売業者名**: 氏名（個人事業主の場合）
+- **代表責任者**: 氏名
+- **所在地**: （請求により遅滞なく提供）
+- **電話番号**: 090-3124-0502（登録済）
+- **メールアドレス**: gonmogu236@gmail.com
+
+### セキュリティ自己診断 (問診票)
+Stripe の本番申請時に「どのように決済を行うか」と聞かれたら以下を選択してください：
+- **決済方法**: 「その他 (Stripe Checkout)」
+- **セキュリティ対策**: 全て「はい」を選択（SQLインジェクション対策、ディレクトリ保護、二段階認証、Stripeによる自動制限などが本システムで考慮されています）。
 
 ---
 
-💡 **サポートが必要な場合**
-APIキーの具体的な埋め込み方法や、特定のサービスでのビルドエラーが発生した際は、いつでもお知らせください。
+## 5. 稼働状況の確認方法 (ヘルステック)
+
+サーバーが正常に動いているか不安な時は、以下の URL をブラウザで直接開いてください。
+- **API 生存確認**: `https://go-optimize-api.onrender.com/health`
+  - `{"status":"ok","service":"GoOptimize AI"}` と出れば正常です。
+
+---
+
+## 6. 将来的な改善ポイント (永続化)
+
+- **データベース**: 現在の Render 無料プランでは、インスタンスが再起動すると SQLite ファイルが初期化される可能性があります。
+- **恒久対策**: [Supabase](https://supabase.com/) 等の外部 PostgreSQL を使用し、`DATABASE_URL` を設定することで、解析履歴を永久に保持できます。
+
+---
+
+## 7. トラブルシューティング済み事項 (備忘録)
+- **Stripe の遅延初期化**: API キーが設定されていない場合でもサーバーが落ちないように修正済み。
+- **0.0.0.0 バインド**: Render のポートスキャンを確実に通過させる設定を適用済み。
+- **SQLite 初期化フロー**: 本番環境でのディレクトリ作成と同期の堅牢性を強化済み。
