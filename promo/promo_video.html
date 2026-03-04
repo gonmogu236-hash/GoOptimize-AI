@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1280, height=720">
+  <title>GoOptimize AI Promo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 1280px;
+      height: 720px;
+      overflow: hidden;
+      background: #050a18;
+      font-family: 'Noto Sans JP', sans-serif;
+      color: #fff;
+    }
+
+    /* === Particle Canvas === */
+    #particles {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
+
+    /* === Grid overlay === */
+    .grid-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image:
+        linear-gradient(rgba(16, 185, 129, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(16, 185, 129, 0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      z-index: 1;
+    }
+
+    /* === Go Board Background === */
+    #goBoard {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 900px;
+      height: 900px;
+      transform: translate(-50%, -50%) rotateX(45deg) rotateZ(15deg);
+      opacity: 0.15;
+      z-index: 0;
+      filter: blur(2px);
+      pointer-events: none;
+      transition: opacity 1s, filter 1s, transform 3s ease-in-out;
+    }
+
+    .scene.active~#goBoard,
+    body.scene2-active #goBoard {
+      opacity: 0.25;
+      filter: blur(1px);
+      transform: translate(-50%, -50%) rotateX(20deg) rotateZ(0deg) scale(1.1);
+    }
+
+    body.scene3-active #goBoard,
+    body.scene4-active #goBoard {
+      opacity: 0.05;
+      filter: blur(5px);
+    }
+
+    /* === Scenes === */
+    .scene {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.8s ease;
+    }
+
+    .scene.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* === Scene 1: Problem === */
+    #scene1 .problem-text {
+      font-size: 42px;
+      font-weight: 900;
+      text-align: center;
+      line-height: 1.6;
+      opacity: 0;
+      transform: translateY(30px);
+      animation: fadeSlideUp 1.2s ease forwards;
+      animation-delay: 0.5s;
+      text-shadow: 0 0 40px rgba(16, 185, 129, 0.3);
+    }
+
+    /* === Scene 2: Brand === */
+    #scene2 .logo-text {
+      font-size: 72px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #10b981, #06d6a0, #34d399);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      opacity: 0;
+      transform: scale(0.8);
+      filter: drop-shadow(0 0 30px rgba(16, 185, 129, 0.5));
+    }
+
+    #scene2.active .logo-text {
+      animation: logoReveal 1.5s ease forwards 0.3s;
+    }
+
+    #scene2 .subtitle {
+      font-size: 32px;
+      font-weight: 700;
+      margin-top: 24px;
+      opacity: 0;
+      text-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+    }
+
+    #scene2.active .subtitle {
+      animation: fadeSlideUp 1s ease forwards 1.2s;
+    }
+
+    /* Radar + Graph visual */
+    .visual-container {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+    }
+
+    .radar-glow {
+      position: absolute;
+      width: 280px;
+      height: 280px;
+      border-radius: 50%;
+      border: 2px solid rgba(16, 185, 129, 0.2);
+      top: 50%;
+      left: 15%;
+      transform: translate(-50%, -50%);
+      opacity: 0;
+    }
+
+    #scene2.active .radar-glow {
+      animation: radarPulse 2s ease forwards 0.5s;
+    }
+
+    .radar-line {
+      position: absolute;
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.4), transparent);
+      top: 50%;
+      left: 0;
+    }
+
+    .radar-line:nth-child(2) {
+      transform: rotate(60deg);
+    }
+
+    .radar-line:nth-child(3) {
+      transform: rotate(120deg);
+    }
+
+    .radar-shape {
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      opacity: 0;
+    }
+
+    #scene2.active .radar-shape {
+      animation: fadeIn 1s ease forwards 1s;
+    }
+
+    .radar-shape svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .graph-glow {
+      position: absolute;
+      width: 350px;
+      height: 200px;
+      top: 50%;
+      right: 8%;
+      transform: translateY(-50%);
+      opacity: 0;
+    }
+
+    #scene2.active .graph-glow {
+      animation: graphReveal 2s ease forwards 0.8s;
+    }
+
+    .graph-glow svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Tagline */
+    #scene2 .tagline {
+      font-size: 38px;
+      font-weight: 900;
+      margin-top: 40px;
+      opacity: 0;
+      background: linear-gradient(135deg, #fff, #a7f3d0);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    #scene2.active .tagline {
+      animation: fadeSlideUp 1s ease forwards 2.5s;
+    }
+
+    /* === Scene 3: Features === */
+    #scene3 .scene3-layout {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      width: 1150px;
+    }
+
+    #scene3 .features-list {
+      width: 50%;
+    }
+
+    #scene3 .ui-mockup {
+      width: 45%;
+      height: 520px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 16px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(16, 185, 129, 0.05);
+      backdrop-filter: blur(10px);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      opacity: 0;
+      transform: translateX(60px);
+    }
+
+    #scene3.active .ui-mockup {
+      animation: featureSlideRight 1s ease forwards 1.5s;
+    }
+
+    .mockup-header {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 12px;
+    }
+
+    .mockup-header .badge {
+      background: #10b981;
+      color: #000;
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-weight: 900;
+    }
+
+    .mockup-cards {
+      display: flex;
+      gap: 16px;
+      height: 160px;
+    }
+
+    .mockup-card {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(16, 185, 129, 0.1);
+    }
+
+    .mockup-graph {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 12px;
+      border: 1px solid rgba(16, 185, 129, 0.1);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      margin: 16px 0;
+      opacity: 0;
+      transform: translateX(-60px);
+      padding: 16px 32px;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(16, 185, 129, 0.02));
+      border-left: 3px solid #10b981;
+      border-radius: 0 12px 12px 0;
+      width: 100%;
+    }
+
+    .feature-icon {
+      font-size: 40px;
+      flex-shrink: 0;
+      filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.5));
+    }
+
+    .feature-name {
+      font-size: 26px;
+      font-weight: 900;
+      color: #10b981;
+    }
+
+    .feature-desc {
+      font-size: 22px;
+      font-weight: 700;
+      color: #e2e8f0;
+      margin-top: 4px;
+    }
+
+    #scene3.active .feature-item:nth-child(1) {
+      animation: featureSlide 0.8s ease forwards 0.3s;
+    }
+
+    #scene3.active .feature-item:nth-child(2) {
+      animation: featureSlide 0.8s ease forwards 1.5s;
+    }
+
+    #scene3.active .feature-item:nth-child(3) {
+      animation: featureSlide 0.8s ease forwards 2.7s;
+    }
+
+    #scene3.active .feature-item:nth-child(4) {
+      animation: featureSlide 0.8s ease forwards 3.9s;
+    }
+
+    /* === Scene 4: CTA === */
+    #scene4 .cta-text {
+      font-size: 48px;
+      font-weight: 900;
+      opacity: 0;
+      text-shadow: 0 0 40px rgba(16, 185, 129, 0.5);
+    }
+
+    #scene4.active .cta-text {
+      animation: fadeSlideUp 1s ease forwards 0.3s;
+    }
+
+    #scene4 .cta-url {
+      font-size: 36px;
+      font-weight: 700;
+      opacity: 0;
+      margin-top: 24px;
+      background: linear-gradient(135deg, #10b981, #06d6a0);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 20px rgba(16, 185, 129, 0.4));
+    }
+
+    #scene4.active .cta-url {
+      animation: fadeSlideUp 1s ease forwards 1s;
+    }
+
+    .cta-glow {
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, transparent 70%);
+      opacity: 0;
+    }
+
+    #scene4.active .cta-glow {
+      animation: pulseGlow 2s ease forwards 0.5s;
+    }
+
+    /* === Flash transition === */
+    .flash {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #10b981;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* === Keyframes === */
+    @keyframes fadeSlideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes logoReveal {
+      0% {
+        opacity: 0;
+        transform: scale(0.8);
+        filter: drop-shadow(0 0 0px rgba(16, 185, 129, 0));
+      }
+
+      50% {
+        opacity: 1;
+        transform: scale(1.05);
+        filter: drop-shadow(0 0 60px rgba(16, 185, 129, 0.8));
+      }
+
+      100% {
+        opacity: 1;
+        transform: scale(1);
+        filter: drop-shadow(0 0 30px rgba(16, 185, 129, 0.5));
+      }
+    }
+
+    @keyframes radarPulse {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.5);
+      }
+
+      50% {
+        opacity: 0.6;
+      }
+
+      100% {
+        opacity: 0.3;
+        transform: translate(-50%, -50%) scale(1);
+      }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 0.7;
+      }
+    }
+
+    @keyframes graphReveal {
+      0% {
+        opacity: 0;
+        transform: translateY(-50%) scaleX(0);
+      }
+
+      100% {
+        opacity: 0.5;
+        transform: translateY(-50%) scaleX(1);
+      }
+    }
+
+    @keyframes featureSlide {
+      from {
+        opacity: 0;
+        transform: translateX(-60px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes featureSlideRight {
+      from {
+        opacity: 0;
+        transform: translateX(60px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes pulseGlow {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.5);
+      }
+
+      100% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+    }
+
+    @keyframes flashAnim {
+      0% {
+        opacity: 0;
+      }
+
+      15% {
+        opacity: 0.8;
+      }
+
+      100% {
+        opacity: 0;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <canvas id="goBoard"></canvas>
+  <canvas id="particles"></canvas>
+  <div class="grid-overlay"></div>
+  <div class="flash" id="flash"></div>
+
+  <!-- Scene 1: Problem -->
+  <div class="scene active" id="scene1">
+    <div class="problem-text">努力しているのに、<br>なぜ勝率が伸びない？</div>
+  </div>
+
+  <!-- Scene 2: Brand -->
+  <div class="scene" id="scene2">
+    <div class="visual-container">
+      <div class="radar-glow">
+        <div class="radar-line"></div>
+        <div class="radar-line"></div>
+        <div class="radar-line"></div>
+        <div class="radar-shape">
+          <svg viewBox="0 0 200 200">
+            <polygon points="100,20 170,60 160,150 100,180 40,140 50,50" fill="rgba(16,185,129,0.15)" stroke="#10b981"
+              stroke-width="2" />
+            <polygon points="100,50 145,75 140,130 100,150 60,125 65,70" fill="none" stroke="rgba(16,185,129,0.3)"
+              stroke-width="1" stroke-dasharray="4" />
+            <polygon points="100,80 120,90 118,115 100,120 82,112 84,88" fill="none" stroke="rgba(16,185,129,0.2)"
+              stroke-width="1" stroke-dasharray="4" />
+          </svg>
+        </div>
+      </div>
+      <div class="graph-glow">
+        <svg viewBox="0 0 350 200">
+          <path d="M 0 180 Q 30 170, 50 160 T 100 120 T 150 90 T 180 110 T 210 50 T 250 70 T 300 30 T 350 20"
+            fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" />
+          <path
+            d="M 0 180 Q 30 170, 50 160 T 100 120 T 150 90 T 180 110 T 210 50 T 250 70 T 300 30 T 350 20 L 350 200 L 0 200 Z"
+            fill="url(#graphGrad)" opacity="0.3" />
+          <defs>
+            <linearGradient id="graphGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#10b981" />
+              <stop offset="100%" stop-color="transparent" />
+            </linearGradient>
+          </defs>
+          <circle cx="210" cy="50" r="5" fill="#ef4444" opacity="0.8">
+            <animate attributeName="r" values="5;8;5" dur="1s" repeatCount="indefinite" />
+          </circle>
+          <text x="218" y="45" fill="#ef4444" font-size="11" font-family="Noto Sans JP" font-weight="700">敗着</text>
+        </svg>
+      </div>
+    </div>
+    <div class="logo-text">GoOptimize AI</div>
+    <div class="subtitle">AIがあなたの弱点を数値化する。</div>
+    <div class="tagline">感覚から、戦略へ。</div>
+  </div>
+
+  <!-- Scene 3: Features -->
+  <div class="scene" id="scene3">
+    <div class="scene3-layout">
+      <div class="features-list">
+        <div class="feature-item">
+          <div class="feature-icon">📊</div>
+          <div>
+            <div class="feature-name">6軸レーダー分析</div>
+            <div class="feature-desc">弱点が、一瞬でわかる。</div>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">📈</div>
+          <div>
+            <div class="feature-name">勝率推移グラフ</div>
+            <div class="feature-desc">勝負の分岐点が、見える。</div>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">🧠</div>
+          <div>
+            <div class="feature-name">詳細診断</div>
+            <div class="feature-desc">弱点を、具体化。</div>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">📋</div>
+          <div>
+            <div class="feature-name">学習プラン自動生成</div>
+            <div class="feature-desc">何を勉強すればいいか、迷わない。</div>
+          </div>
+        </div>
+      </div>
+      <div class="ui-mockup">
+        <div class="mockup-header">
+          解析レポート <span class="badge">スコア 78点</span>
+        </div>
+        <div class="mockup-cards">
+          <div class="mockup-card">
+            <svg viewBox="0 0 100 100"
+              style="width:120px; height:120px; filter: drop-shadow(0 0 10px rgba(16,185,129,0.3));">
+              <!-- Grid hexagon -->
+              <polygon points="50,10 85,30 85,70 50,90 15,70 15,30" fill="none" stroke="rgba(16,185,129,0.2)"
+                stroke-width="1" />
+              <polygon points="50,23 74,37 74,63 50,77 26,63 26,37" fill="none" stroke="rgba(16,185,129,0.2)"
+                stroke-width="1" />
+
+              <!-- Value hexagon -->
+              <polygon points="50,30 70,40 65,70 40,80 25,60 30,35" fill="rgba(16,185,129,0.3)" stroke="#10b981"
+                stroke-width="2" />
+            </svg>
+          </div>
+          <div class="mockup-card" style="flex-direction: column; gap: 8px;">
+            <div style="font-size:12px; color:#94a3b8;">最大の弱点</div>
+            <div style="font-size:18px; font-weight:900; color:#ef4444;">ヨセの計算</div>
+            <div style="font-size:11px; color:#64748b; padding: 0 12px; text-align: center;">
+              後半での損が蓄積しています。<br>150手目以降の勝率変動大。</div>
+          </div>
+        </div>
+        <div class="mockup-graph">
+          <div style="font-size:12px; color:#94a3b8; margin-bottom:12px; display:flex; justify-content:space-between;">
+            <span>勝率推移</span>
+            <span style="color:#10b981;">黒番視点</span>
+          </div>
+          <svg viewBox="0 0 400 120" style="width:100%; flex:1; overflow:visible;">
+            <line x1="0" y1="60" x2="400" y2="60" stroke="rgba(255,255,255,0.1)" stroke-dasharray="4" />
+            <path d="M 0 60 Q 30 50, 60 40 T 130 15 T 180 30 T 220 25 T 280 80 T 350 90 T 400 95" fill="none"
+              stroke="#10b981" stroke-width="3" stroke-linecap="round" />
+            <path d="M 0 60 Q 30 50, 60 40 T 130 15 T 180 30 T 220 25 T 280 80 T 350 90 T 400 95 L 400 120 L 0 120 Z"
+              fill="url(#graphGradUI)" opacity="0.3" />
+            <defs>
+              <linearGradient id="graphGradUI" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#10b981" />
+                <stop offset="100%" stop-color="transparent" />
+              </linearGradient>
+            </defs>
+            <circle cx="230" cy="40" r="5" fill="#ef4444">
+              <animate attributeName="r" values="5;8;5" dur="1s" repeatCount="indefinite" />
+            </circle>
+            <text x="242" y="37" fill="#ef4444" font-size="12" font-weight="700">敗着(-35%)</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scene 4: CTA -->
+  <div class="scene" id="scene4">
+    <div class="cta-glow"></div>
+    <div class="cta-text">無料で、今すぐ解析。</div>
+    <div class="cta-url">go-optimize-ai.vercel.app</div>
+  </div>
+
+  <script>
+    // === Particle system ===
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 1280;
+    canvas.height = 720;
+
+    const particles = [];
+    for (let i = 0; i < 80; i++) {
+      particles.push({
+        x: Math.random() * 1280,
+        y: Math.random() * 720,
+        vx: (Math.random() - 0.5) * 0.5,
+        vy: (Math.random() - 0.5) * 0.5,
+        size: Math.random() * 2 + 0.5,
+        alpha: Math.random() * 0.5 + 0.1,
+      });
+    }
+
+    function animateParticles() {
+      ctx.clearRect(0, 0, 1280, 720);
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0) p.x = 1280;
+        if (p.x > 1280) p.x = 0;
+        if (p.y < 0) p.y = 720;
+        if (p.y > 720) p.y = 0;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(16, 185, 129, ${p.alpha})`;
+        ctx.fill();
+
+        // glow
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(16, 185, 129, ${p.alpha * 0.15})`;
+        ctx.fill();
+      });
+
+      // connection lines
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 120) {
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = `rgba(16, 185, 129, ${0.08 * (1 - dist / 120)})`;
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+          }
+        }
+      }
+      requestAnimationFrame(animateParticles);
+    }
+    animateParticles();
+
+    // === Go Board Animation ===
+    const goCanvas = document.getElementById('goBoard');
+    const goCtx = goCanvas.getContext('2d');
+    goCanvas.width = 900; goCanvas.height = 900;
+    const gridSize = 19;
+    const cellSize = 900 / (gridSize + 1);
+
+    let stones = []; // {x, y, color}
+    let moveIndex = 0;
+    // predefined moves to simulate a game
+    const gameMoves = [
+      { x: 15, y: 3, c: 1 }, { x: 3, y: 15, c: -1 }, { x: 15, y: 16, c: 1 }, { x: 3, y: 3, c: -1 },
+      { x: 2, y: 5, c: 1 }, { x: 16, y: 13, c: -1 }, { x: 13, y: 16, c: 1 }, { x: 5, y: 16, c: -1 },
+      { x: 16, y: 5, c: 1 }, { x: 13, y: 3, c: -1 }, { x: 9, y: 16, c: 1 }, { x: 3, y: 9, c: -1 },
+      { x: 8, y: 15, c: 1 }, { x: 5, y: 13, c: -1 }, { x: 15, y: 9, c: 1 }, { x: 9, y: 3, c: -1 },
+      { x: 10, y: 4, c: 1 }, { x: 3, y: 13, c: -1 }, { x: 14, y: 2, c: 1 }, { x: 15, y: 13, c: -1 },
+      { x: 14, y: 14, c: 1 }, { x: 16, y: 14, c: -1 }, { x: 13, y: 14, c: 1 }, { x: 15, y: 15, c: -1 },
+      { x: 12, y: 15, c: 1 }, { x: 14, y: 16, c: -1 }, { x: 12, y: 14, c: 1 }, { x: 6, y: 2, c: -1 },
+      { x: 7, y: 3, c: 1 }, { x: 5, y: 3, c: -1 }, { x: 6, y: 4, c: 1 }, { x: 4, y: 4, c: -1 },
+    ];
+
+    function drawGoBoard() {
+      goCtx.clearRect(0, 0, 900, 900);
+
+      // Board Background
+      goCtx.fillStyle = '#dcab6b';
+      goCtx.fillRect(0, 0, 900, 900);
+
+      // Grid Lines
+      goCtx.strokeStyle = '#333';
+      goCtx.lineWidth = 2;
+      for (let i = 1; i <= gridSize; i++) {
+        goCtx.beginPath();
+        goCtx.moveTo(cellSize, i * cellSize);
+        goCtx.lineTo(900 - cellSize, i * cellSize);
+        goCtx.stroke();
+        goCtx.beginPath();
+        goCtx.moveTo(i * cellSize, cellSize);
+        goCtx.lineTo(i * cellSize, 900 - cellSize);
+        goCtx.stroke();
+      }
+
+      // Star Points (Hoshi)
+      const stars = [4, 10, 16];
+      goCtx.fillStyle = '#111';
+      for (let r of stars) {
+        for (let c of stars) {
+          goCtx.beginPath();
+          goCtx.arc(r * cellSize, c * cellSize, 6, 0, Math.PI * 2);
+          goCtx.fill();
+        }
+      }
+
+      // Stones
+      stones.forEach((stone, idx) => {
+        goCtx.beginPath();
+        goCtx.arc(stone.x * cellSize, stone.y * cellSize, cellSize / 2 - 2, 0, Math.PI * 2);
+        goCtx.fillStyle = stone.c === 1 ? '#111' : '#f0f0f0';
+        goCtx.fill();
+        goCtx.lineWidth = 1;
+        goCtx.strokeStyle = stone.c === 1 ? '#000' : '#ccc';
+        goCtx.stroke();
+
+        // highlight last move
+        if (idx === stones.length - 1) {
+          goCtx.beginPath();
+          goCtx.arc(stone.x * cellSize, stone.y * cellSize, cellSize / 4, 0, Math.PI * 2);
+          goCtx.lineWidth = 3;
+          goCtx.strokeStyle = stone.c === 1 ? '#fff' : '#000';
+          goCtx.stroke();
+        }
+      });
+    }
+
+    function playNextMove() {
+      if (moveIndex < gameMoves.length) {
+        stones.push(gameMoves[moveIndex]);
+        moveIndex++;
+        drawGoBoard();
+      }
+    }
+    drawGoBoard();
+    setInterval(playNextMove, 800); // play a move every 0.8s
+
+    // === Scene transitions ===
+    const flash = document.getElementById('flash');
+    const scenes = [
+      document.getElementById('scene1'),
+      document.getElementById('scene2'),
+      document.getElementById('scene3'),
+      document.getElementById('scene4'),
+    ];
+
+    function switchScene(from, to) {
+      flash.style.animation = 'flashAnim 0.6s ease forwards';
+      setTimeout(() => {
+        scenes[from].classList.remove('active');
+        scenes[to].classList.add('active');
+        document.body.className = `scene${to + 1}-active`;
+      }, 150);
+      setTimeout(() => {
+        flash.style.animation = '';
+      }, 600);
+    }
+
+    // Timeline
+    setTimeout(() => switchScene(0, 1), 4000);   // Scene1 -> Scene2 at 4s
+    setTimeout(() => switchScene(1, 2), 12000);  // Scene2 -> Scene3 at 12s
+    setTimeout(() => switchScene(2, 3), 20000);  // Scene3 -> Scene4 at 20s
+  </script>
+</body>
+
+</html>

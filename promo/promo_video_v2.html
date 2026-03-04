@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1280, height=720">
+    <title>GoOptimize AI Promo - Actual UI</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+JP:wght@400;700;900&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0e1a;
+            --accent-primary: #10b981;
+            --border-color: rgba(148, 163, 184, 0.1);
+            --radius-lg: 16px;
+        }
+
+        body {
+            width: 1280px;
+            height: 720px;
+            overflow: hidden;
+            background: var(--bg-primary);
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            color: #fff;
+        }
+
+        /* === Particle Canvas === */
+        #particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        /* === Grid overlay === */
+        .grid-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(rgba(16, 185, 129, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(16, 185, 129, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            z-index: 1;
+        }
+
+        /* === Scenes === */
+        .scene {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.8s ease;
+        }
+
+        .scene.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* === Scene 1: Problem === */
+        #scene1 .problem-text {
+            font-size: 42px;
+            font-weight: 900;
+            text-align: center;
+            line-height: 1.6;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeSlideUp 1.2s ease forwards;
+            animation-delay: 0.5s;
+            text-shadow: 0 0 40px rgba(16, 185, 129, 0.3);
+        }
+
+        /* === Scene 2: Brand === */
+        #scene2 .brand-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transform: translateY(-20px);
+        }
+
+        #scene2 .logo-text {
+            font-size: 84px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #10b981, #06d6a0, #22d3ee);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            opacity: 0;
+            transform: scale(0.9);
+            filter: drop-shadow(0 0 30px rgba(16, 185, 129, 0.5));
+        }
+
+        #scene2.active .logo-text {
+            animation: logoReveal 1.5s ease forwards 0.3s;
+        }
+
+        #scene2 .subtitle {
+            font-size: 32px;
+            font-weight: 700;
+            margin-top: 24px;
+            opacity: 0;
+            text-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+        }
+
+        #scene2.active .subtitle {
+            animation: fadeSlideUp 1s ease forwards 1.2s;
+        }
+
+        #scene2 .tagline {
+            font-size: 40px;
+            font-weight: 900;
+            margin-top: 40px;
+            opacity: 0;
+            color: #fff;
+        }
+
+        #scene2.active .tagline {
+            animation: fadeSlideUp 1s ease forwards 2.5s;
+        }
+
+        /* === Scene 3: Feature Highlights (UI Rendering) === */
+        #scene3 .feature-stage {
+            display: flex;
+            width: 1100px;
+            height: 500px;
+            gap: 40px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .ui-panel {
+            background: rgba(26, 35, 50, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            transform: translateY(40px);
+            pointer-events: none;
+        }
+
+        .ui-panel.radar {
+            width: 420px;
+            height: 420px;
+        }
+
+        .ui-panel.graph {
+            width: 620px;
+            height: 350px;
+        }
+
+        .panel-label {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--accent-primary);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #scene3.active .ui-panel.radar {
+            animation: fadeSlideUp 1s ease forwards 0.5s;
+        }
+
+        #scene3.active .ui-panel.graph {
+            animation: fadeSlideUp 1s ease forwards 2.5s;
+        }
+
+        .feature-caption {
+            position: absolute;
+            bottom: 60px;
+            font-size: 32px;
+            font-weight: 900;
+            background: rgba(16, 185, 129, 0.9);
+            padding: 12px 30px;
+            border-radius: 4px;
+            opacity: 0;
+            transform: scaleX(0);
+            transform-origin: left;
+        }
+
+        #scene3.active .caption-radar {
+            animation: revealCaption 2s ease forwards 1s;
+        }
+
+        #scene3.active .caption-graph {
+            animation: revealCaption 2s ease forwards 3s;
+        }
+
+        /* === Scene 4: Learning Plan / Diagnostic === */
+        #scene4 .summary-stage {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .diagnostic-card {
+            width: 800px;
+            padding: 40px;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.02));
+            border-left: 6px solid var(--accent-primary);
+            border-radius: 0 16px 16px 0;
+            opacity: 0;
+            transform: translateX(-100px);
+        }
+
+        #scene4.active .card-diagnostic {
+            animation: featureSlide 1s ease forwards 0.5s;
+        }
+
+        #scene4.active .card-plan {
+            animation: featureSlide 1s ease forwards 2s;
+        }
+
+        .summary-title {
+            font-size: 28px;
+            font-weight: 900;
+            color: var(--accent-primary);
+            margin-bottom: 12px;
+        }
+
+        .summary-text {
+            font-size: 22px;
+            line-height: 1.6;
+            color: #e2e8f0;
+        }
+
+        /* === Scene 5: CTA === */
+        #scene5 .cta-content {
+            text-align: center;
+        }
+
+        #scene5 .cta-text {
+            font-size: 56px;
+            font-weight: 900;
+            opacity: 0;
+            text-shadow: 0 0 40px rgba(16, 185, 129, 0.6);
+        }
+
+        #scene5.active .cta-text {
+            animation: fadeSlideUp 1s ease forwards 0.3s;
+        }
+
+        #scene5 .cta-url {
+            font-size: 42px;
+            font-weight: 700;
+            opacity: 0;
+            margin-top: 30px;
+            color: var(--accent-primary);
+            filter: drop-shadow(0 0 20px rgba(16, 185, 129, 0.4));
+        }
+
+        #scene5.active .cta-url {
+            animation: fadeSlideUp 1s ease forwards 1s;
+        }
+
+        /* === Utilities & Keyframes === */
+        @keyframes fadeSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes logoReveal {
+            0% {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1.05);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes revealCaption {
+            0% {
+                opacity: 0;
+                transform: scaleX(0);
+            }
+
+            10% {
+                opacity: 1;
+                transform: scaleX(1);
+            }
+
+            90% {
+                opacity: 1;
+                transform: scaleX(1);
+            }
+
+            100% {
+                opacity: 0;
+                transform: scaleX(1);
+            }
+        }
+
+        @keyframes featureSlide {
+            from {
+                opacity: 0;
+                transform: translateX(-100px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes flashAnim {
+            0% {
+                opacity: 0;
+            }
+
+            15% {
+                opacity: 0.8;
+            }
+
+            100% {
+                opacity: 0;
+            }
+        }
+
+        .flash {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #10b981;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+
+    <canvas id="particles"></canvas>
+    <div class="grid-overlay"></div>
+    <div class="flash" id="flash"></div>
+
+    <!-- Scene 1: Problem -->
+    <div class="scene active" id="scene1">
+        <div class="problem-text">努力しているのに、<br>なぜ勝率が伸びない？</div>
+    </div>
+
+    <!-- Scene 2: Brand -->
+    <div class="scene" id="scene2">
+        <div class="brand-content">
+            <div class="logo-text">GoOptimize AI</div>
+            <div class="subtitle">AIがあなたの弱点を数値化する。</div>
+            <div class="tagline">感覚から、戦略へ。</div>
+        </div>
+    </div>
+
+    <!-- Scene 3: UI Highlights -->
+    <div class="scene" id="scene3">
+        <div class="feature-stage">
+            <div class="ui-panel radar shadow-glow">
+                <div class="panel-label">📊 スキルレーダー</div>
+                <canvas id="radar-canvas"></canvas>
+            </div>
+            <div class="ui-panel graph">
+                <div class="panel-label">📈 勝率推移</div>
+                <canvas id="winrate-canvas"></canvas>
+            </div>
+        </div>
+        <div class="feature-caption caption-radar">弱点が、一瞬でわかる。</div>
+        <div class="feature-caption caption-graph">勝負の分岐点が、見える。</div>
+    </div>
+
+    <!-- Scene 4: Insights -->
+    <div class="scene" id="scene4">
+        <div class="summary-stage">
+            <div class="diagnostic-card card-diagnostic">
+                <div class="summary-title">🧠 詳細診断</div>
+                <div class="summary-text">「厚みの芸術家 — 実利とのバランスを」<br>対極の傾向を人格レベルで分析し、敗因を言語化。</div>
+            </div>
+            <div class="diagnostic-card card-plan">
+                <div class="summary-title">📋 学習プラン自動生成</div>
+                <div class="summary-text">弱点を克服するための1ヶ月メニューを自動作成。<br>何をすべきか、もう迷わない。</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scene 5: CTA -->
+    <div class="scene" id="scene5">
+        <div class="cta-content">
+            <div class="cta-text">無料で、今すぐ解析。</div>
+            <div class="cta-url">go-optimize-ai.vercel.app</div>
+        </div>
+    </div>
+
+    <script>
+        // === Particle System ===
+        const pCanvas = document.getElementById('particles');
+        const pCtx = pCanvas.getContext('2d');
+        pCanvas.width = 1280; pCanvas.height = 720;
+        const particles = [];
+        for (let i = 0; i < 70; i++) {
+            particles.push({
+                x: Math.random() * 1280, y: Math.random() * 720,
+                vx: (Math.random() - 0.5) * 0.4, vy: (Math.random() - 0.5) * 0.4,
+                size: Math.random() * 2 + 0.5, alpha: Math.random() * 0.4 + 0.1
+            });
+        }
+        function animateParticles() {
+            pCtx.clearRect(0, 0, 1280, 720);
+            particles.forEach(p => {
+                p.x += p.vx; p.y += p.vy;
+                if (p.x < 0) p.x = 1280; if (p.x > 1280) p.x = 0;
+                if (p.y < 0) p.y = 720; if (p.y > 720) p.y = 0;
+                pCtx.beginPath(); pCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                pCtx.fillStyle = `rgba(16, 185, 129, ${p.alpha})`; pCtx.fill();
+            });
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+
+        // === UI Rendering (Radar) ===
+        function drawRadar() {
+            const canvas = document.getElementById('radar-canvas');
+            const ctx = canvas.getContext('2d');
+            const size = 320; canvas.width = size; canvas.height = size;
+            const labels = ['布石力', '中盤戦闘力', '死活精度', 'ヨセ精度', '安定性', '判断力'];
+            const values = [85, 92, 45, 78, 60, 88];
+            const cx = size / 2, cy = size / 2, maxR = 110;
+
+            // Grid
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.15)'; ctx.lineWidth = 1;
+            for (let i = 1; i <= 5; i++) {
+                ctx.beginPath();
+                const r = (maxR / 5) * i;
+                for (let j = 0; j <= 6; j++) {
+                    const a = -Math.PI / 2 + (Math.PI * 2 / 6) * j;
+                    const x = cx + r * Math.cos(a), y = cy + r * Math.sin(a);
+                    if (j === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+            // Shape
+            ctx.beginPath();
+            values.forEach((v, i) => {
+                const a = -Math.PI / 2 + (Math.PI * 2 / 6) * i;
+                const r = (v / 100) * maxR;
+                const x = cx + r * Math.cos(a), y = cy + r * Math.sin(a);
+                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            });
+            ctx.closePath();
+            const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, maxR);
+            grad.addColorStop(0, 'rgba(16, 185, 129, 0.4)'); grad.addColorStop(1, 'rgba(34, 211, 238, 0.1)');
+            ctx.fillStyle = grad; ctx.fill();
+            ctx.strokeStyle = '#10b981'; ctx.lineWidth = 3; ctx.stroke();
+            // Points & Labels
+            ctx.font = '12px Noto Sans JP'; ctx.fillStyle = '#94a3b8'; ctx.textAlign = 'center';
+            labels.forEach((l, i) => {
+                const a = -Math.PI / 2 + (Math.PI * 2 / 6) * i;
+                const x = cx + (maxR + 25) * Math.cos(a), y = cy + (maxR + 25) * Math.sin(a);
+                ctx.fillText(l, x, y + 5);
+                const rx = cx + (values[i] / 100) * maxR * Math.cos(a), ry = cy + (values[i] / 100) * maxR * Math.sin(a);
+                ctx.beginPath(); ctx.arc(rx, ry, 4, 0, Math.PI * 2); ctx.fillStyle = '#10b981'; ctx.fill();
+                ctx.strokeStyle = '#0a0e1a'; ctx.lineWidth = 2; ctx.stroke();
+            });
+        }
+
+        // === UI Rendering (Winrate) ===
+        function drawWinrate() {
+            const canvas = document.getElementById('winrate-canvas');
+            const ctx = canvas.getContext('2d');
+            const w = 570, h = 260; canvas.width = w; canvas.height = h;
+            const padding = { l: 40, r: 20, t: 20, b: 40 };
+            const cw = w - padding.l - padding.r, ch = h - padding.t - padding.b;
+            const data = Array.from({ length: 120 }, (_, i) => {
+                let base = 50 + 20 * Math.sin(i / 15) + 10 * Math.cos(i / 5);
+                if (i > 80) base -= (i - 80) * 1.2;
+                return Math.max(0, Math.min(100, base));
+            });
+
+            // Grid
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.1)'; ctx.lineWidth = 1;
+            [0, 25, 50, 75, 100].forEach(v => {
+                const y = padding.t + ch * (1 - v / 100);
+                ctx.beginPath(); ctx.moveTo(padding.l, y); ctx.lineTo(padding.l + cw, y); ctx.stroke();
+            });
+            // 50% line
+            ctx.setLineDash([5, 5]); ctx.strokeStyle = 'rgba(244, 63, 94, 0.4)';
+            ctx.beginPath(); ctx.moveTo(padding.l, padding.t + ch * 0.5); ctx.lineTo(padding.l + cw, padding.t + ch * 0.5); ctx.stroke();
+            ctx.setLineDash([]);
+            // Line
+            ctx.beginPath();
+            data.forEach((v, i) => {
+                const x = padding.l + (i / (data.length - 1)) * cw;
+                const y = padding.t + ch * (1 - v / 100);
+                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            });
+            ctx.strokeStyle = '#10b981'; ctx.lineWidth = 3; ctx.stroke();
+            // Fill
+            ctx.lineTo(padding.l + cw, padding.t + ch); ctx.lineTo(padding.l, padding.t + ch); ctx.closePath();
+            const grd = ctx.createLinearGradient(0, padding.t, 0, padding.t + ch);
+            grd.addColorStop(0, 'rgba(16, 185, 129, 0.2)'); grd.addColorStop(1, 'rgba(16, 185, 129, 0)');
+            ctx.fillStyle = grd; ctx.fill();
+            // Blunder point
+            const bx = padding.l + (82 / 119) * cw, by = padding.t + ch * (1 - data[82] / 100);
+            ctx.beginPath(); ctx.arc(bx, by, 6, 0, Math.PI * 2); ctx.fillStyle = '#f43f5e'; ctx.fill();
+            ctx.font = 'bold 12px Noto Sans JP'; ctx.fillStyle = '#f43f5e'; ctx.fillText('大悪手', bx + 10, by - 10);
+        }
+
+        // === Scene Management ===
+        const flash = document.getElementById('flash');
+        const scenes = [
+            document.getElementById('scene1'),
+            document.getElementById('scene2'),
+            document.getElementById('scene3'),
+            document.getElementById('scene4'),
+            document.getElementById('scene5')
+        ];
+
+        function switchScene(from, to) {
+            flash.style.animation = 'flashAnim 0.6s ease forwards';
+            setTimeout(() => {
+                scenes[from].classList.remove('active');
+                scenes[to].classList.add('active');
+                if (to === 2) { drawRadar(); drawWinrate(); }
+            }, 150);
+            setTimeout(() => { flash.style.animation = ''; }, 600);
+        }
+
+        // Timeline
+        setTimeout(() => switchScene(0, 1), 4000);   // Problem -> Logo
+        setTimeout(() => switchScene(1, 2), 10000);  // Logo -> UI
+        setTimeout(() => switchScene(2, 3), 18000);  // UI -> Summary
+        setTimeout(() => switchScene(3, 4), 26000);  // Summary -> CTA
+    </script>
+</body>
+
+</html>
