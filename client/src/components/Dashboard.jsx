@@ -60,7 +60,7 @@ export default function Dashboard({ data, onNewAnalysis }) {
         }
     };
 
-    const { metadata, scores, winRates, weaknesses, playStyle, diagnostic, learningPlan, phaseStats } = data;
+    const { metadata, scores, winRates, weaknesses, playStyle, diagnostic, learningPlan, phaseStats, playerColor } = data;
 
     const scoreItems = [
         { key: 'fuseki', label: '布石力', emoji: '🏯' },
@@ -71,8 +71,8 @@ export default function Dashboard({ data, onNewAnalysis }) {
         { key: 'judgment', label: '判断力', emoji: '🧠' }
     ];
 
-    const blunders = winRates?.filter(wr => wr.isBlunder).length || 0;
-    const mistakes = winRates?.filter(wr => wr.isMistake).length || 0;
+    const blunders = winRates?.filter(wr => wr.isBlunder && wr.color === playerColor).length || 0;
+    const mistakes = winRates?.filter(wr => wr.isMistake && wr.color === playerColor).length || 0;
 
     return (
         <div className="dashboard" ref={reportRef}>
@@ -82,6 +82,10 @@ export default function Dashboard({ data, onNewAnalysis }) {
                     <h2>解析結果 {isPremium && <span style={{ color: '#fbbf24', fontSize: '1rem', marginLeft: '8px' }}>★プレミアム</span>}</h2>
                     <span className="subtitle">
                         {metadata?.playerBlack || '不明'} vs {metadata?.playerWhite || '不明'} — {metadata?.result || '結果不明'} | {metadata?.totalMoves || 0}手
+                        <br />
+                        <span style={{ color: 'var(--accent-primary)', fontWeight: 600, fontSize: '0.9rem', marginTop: '4px', display: 'inline-block' }}>
+                            👤 解析対象: あなた ({playerColor === 'W' ? '白番' : '黒番'})
+                        </span>
                     </span>
                 </div>
                 <div style={{ display: 'flex', gap: '12px' }}>
@@ -168,7 +172,7 @@ export default function Dashboard({ data, onNewAnalysis }) {
                                 大悪手: {blunders}回 / 疑問手: {mistakes}回
                             </span>
                         </div>
-                        {winRates && <WinRateChart winRates={winRates} />}
+                        {winRates && <WinRateChart winRates={winRates} playerColor={playerColor} />}
                     </div>
 
                     {/* フェーズ別サマリー */}

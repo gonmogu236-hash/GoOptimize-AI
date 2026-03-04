@@ -3,7 +3,7 @@ import { useRef, useEffect } from 'react';
 /**
  * 勝率推移グラフ（Canvas描画）
  */
-export default function WinRateChart({ winRates }) {
+export default function WinRateChart({ winRates, playerColor }) {
     const canvasRef = useRef(null);
 
     useEffect(() => {
@@ -111,7 +111,7 @@ export default function WinRateChart({ winRates }) {
 
         // 悪手マーカー
         winRates.forEach((wr, i) => {
-            if (wr.isBlunder || wr.isMistake) {
+            if ((wr.isBlunder || wr.isMistake) && wr.color === playerColor) {
                 const x = padding.left + (i / totalMoves) * chartW;
                 const y = padding.top + chartH * (1 - wr.winRate / 100);
 

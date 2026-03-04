@@ -12,6 +12,18 @@ const ANALYSIS_STEPS = [
     '学習プランを作成中...'
 ];
 
+/**
+ * SGFテキストからPB/PW名を簡易パース
+ */
+function extractPlayerNames(sgfText) {
+    const pbMatch = sgfText.match(/PB\[([^\]]*)\]/);
+    const pwMatch = sgfText.match(/PW\[([^\]]*)\]/);
+    return {
+        black: pbMatch ? pbMatch[1] : '黒番プレイヤー',
+        white: pwMatch ? pwMatch[1] : '白番プレイヤー'
+    };
+}
+
 export default function Upload({ onAnalysisComplete }) {
     const [isDragOver, setIsDragOver] = useState(false);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -19,6 +31,12 @@ export default function Upload({ onAnalysisComplete }) {
     const [error, setError] = useState(null);
     const [fileName, setFileName] = useState('');
     const fileInput = useRef(null);
+
+    // 色選択ステート
+    const [pendingFile, setPendingFile] = useState(null);
+    const [pendingSGFText, setPendingSGFText] = useState(null);
+    const [playerNames, setPlayerNames] = useState(null);
+    const [showColorSelect, setShowColorSelect] = useState(false);
 
     const simulateSteps = useCallback(() => {
         let step = 0;
@@ -33,16 +51,42 @@ export default function Upload({ onAnalysisComplete }) {
         return () => clearInterval(interval);
     }, []);
 
-    const handleAnalyze = async (file) => {
-        setIsAnalyzing(true);
+    /**
+     * SGFファイルを読み込み → 色選択画面を表示
+     */
+    const handleFileLoaded = (file) => {
         setError(null);
-        setCurrentStep(0);
         setFileName(file.name);
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const text = e.target.result;
+            const names = extractPlayerNames(text);
+            setPlayerNames(names);
+            setPendingFile(file);
+            setPendingSGFText(null);
+            setShowColorSelect(true);
+        };
+        reader.readAsText(file);
+    };
+
+    /**
+     * 色を選択して解析を実行
+     */
+    const handleColorSelected = async (playerColor) => {
+        setShowColorSelect(false);
+        setIsAnalyzing(true);
+        setCurrentStep(0);
 
         const stopSteps = simulateSteps();
 
         try {
-            const result = await analyzeSGF(file);
+            let result;
+            if (pendingFile) {
+                result = await analyzeSGF(pendingFile, playerColor);
+            } else if (pendingSGFText) {
+                result = await analyzeSGFText(pendingSGFText, playerColor);
+            }
             stopSteps();
             setCurrentStep(ANALYSIS_STEPS.length);
 
@@ -60,7 +104,7 @@ export default function Upload({ onAnalysisComplete }) {
         e.preventDefault();
         setIsDragOver(false);
         const file = e.dataTransfer.files[0];
-        if (file) handleAnalyze(file);
+        if (file) handleFileLoaded(file);
     };
 
     const handleDragOver = (e) => {
@@ -74,20 +118,14 @@ export default function Upload({ onAnalysisComplete }) {
 
     const handleFileSelect = (e) => {
         const file = e.target.files[0];
-        if (file) handleAnalyze(file);
+        if (file) handleFileLoaded(file);
     };
 
-    const handleUseSample = async () => {
-        setIsAnalyzing(true);
+    const handleUseSample = () => {
         setError(null);
-        setCurrentStep(0);
         setFileName('sample_game.sgf');
 
-        const stopSteps = simulateSteps();
-
-        try {
-            // サンプルSGFを直接送信
-            const sampleSGF = `(;GM[1]FF[4]CA[UTF-8]SZ[19]KM[6.5]PB[あなた]PW[対戦相手]RE[B+2.5]DT[2024-01-15]
+        const sampleSGF = `(;GM[1]FF[4]CA[UTF-8]SZ[19]KM[6.5]PB[あなた]PW[対戦相手]RE[B+2.5]DT[2024-01-15]
 ;B[pd];W[dp];B[pp];W[dd];B[fq];W[cn];B[jp];W[qn];B[ql];W[qq]
 ;B[pq];W[rp];B[ro];W[rq];B[qo];W[pr];B[or];W[ps];B[os];W[qr]
 ;B[nq];W[fc];B[cf];W[ch];B[cc];W[dc];B[cd];W[de];B[bf];W[dh]
@@ -110,20 +148,175 @@ export default function Upload({ onAnalysisComplete }) {
 ;B[he];W[ie];B[je];W[if];B[hf];W[hg];B[gg];W[gf];B[fg];W[ff]
 ;B[eg];W[dg];B[df];W[ef];B[cg])`;
 
-            const result = await analyzeSGFText(sampleSGF);
-            stopSteps();
-            setCurrentStep(ANALYSIS_STEPS.length);
-
-            setTimeout(() => {
-                onAnalysisComplete(result);
-            }, 500);
-        } catch (err) {
-            stopSteps();
-            setError(err.message);
-            setIsAnalyzing(false);
-        }
+        const names = extractPlayerNames(sampleSGF);
+        setPlayerNames(names);
+        setPendingFile(null);
+        setPendingSGFText(sampleSGF);
+        setShowColorSelect(true);
     };
 
+    // === 色選択画面 ===
+    if (showColorSelect && playerNames) {
+        return (
+            <div className="upload-section" style={{ paddingTop: '120px' }}>
+                <div className="color-select-panel" style={{
+                    maxWidth: '560px',
+                    margin: '0 auto',
+                    textAlign: 'center'
+                }}>
+                    <h2 style={{
+                        fontSize: '1.6rem',
+                        fontWeight: 800,
+                        marginBottom: '12px'
+                    }}>
+                        あなたはどちらで打ちましたか？
+                    </h2>
+                    <p style={{
+                        color: 'var(--text-secondary)',
+                        fontSize: '0.9rem',
+                        marginBottom: '32px'
+                    }}>
+                        選択した側の着手のみを解析対象とします。<br />
+                        正確な診断のために、正しい色を選んでください。
+                    </p>
+
+                    <div style={{
+                        display: 'flex', gap: '20px',
+                        justifyContent: 'center', flexWrap: 'wrap'
+                    }}>
+                        {/* 黒番ボタン */}
+                        <button
+                            onClick={() => handleColorSelected('B')}
+                            style={{
+                                padding: '28px 36px',
+                                background: 'linear-gradient(145deg, #1a2332, #1f2b3d)',
+                                border: '2px solid rgba(148, 163, 184, 0.15)',
+                                borderRadius: '16px',
+                                cursor: 'pointer',
+                                transition: 'all 0.3s ease',
+                                minWidth: '220px',
+                                textAlign: 'center',
+                                color: '#fff',
+                                fontFamily: 'inherit'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.borderColor = '#10b981';
+                                e.currentTarget.style.transform = 'translateY(-4px)';
+                                e.currentTarget.style.boxShadow = '0 0 20px rgba(16, 185, 129, 0.2)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.borderColor = 'rgba(148, 163, 184, 0.15)';
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = 'none';
+                            }}
+                        >
+                            <div style={{
+                                width: '56px', height: '56px',
+                                borderRadius: '50%',
+                                background: '#1a1a2e',
+                                border: '3px solid #555',
+                                margin: '0 auto 16px',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: '24px'
+                            }}>
+                                ⚫
+                            </div>
+                            <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>
+                                黒番
+                            </div>
+                            <div style={{
+                                fontSize: '0.85rem',
+                                color: 'var(--text-secondary)',
+                                marginTop: '4px'
+                            }}>
+                                {playerNames.black}
+                            </div>
+                        </button>
+
+                        {/* 白番ボタン */}
+                        <button
+                            onClick={() => handleColorSelected('W')}
+                            style={{
+                                padding: '28px 36px',
+                                background: 'linear-gradient(145deg, #1a2332, #1f2b3d)',
+                                border: '2px solid rgba(148, 163, 184, 0.15)',
+                                borderRadius: '16px',
+                                cursor: 'pointer',
+                                transition: 'all 0.3s ease',
+                                minWidth: '220px',
+                                textAlign: 'center',
+                                color: '#fff',
+                                fontFamily: 'inherit'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.borderColor = '#10b981';
+                                e.currentTarget.style.transform = 'translateY(-4px)';
+                                e.currentTarget.style.boxShadow = '0 0 20px rgba(16, 185, 129, 0.2)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.borderColor = 'rgba(148, 163, 184, 0.15)';
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = 'none';
+                            }}
+                        >
+                            <div style={{
+                                width: '56px', height: '56px',
+                                borderRadius: '50%',
+                                background: '#e8e8e8',
+                                border: '3px solid #ccc',
+                                margin: '0 auto 16px',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: '24px'
+                            }}>
+                                ⚪
+                            </div>
+                            <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>
+                                白番
+                            </div>
+                            <div style={{
+                                fontSize: '0.85rem',
+                                color: 'var(--text-secondary)',
+                                marginTop: '4px'
+                            }}>
+                                {playerNames.white}
+                            </div>
+                        </button>
+                    </div>
+
+                    <p style={{
+                        marginTop: '24px',
+                        fontSize: '0.8rem',
+                        color: 'var(--text-muted)'
+                    }}>
+                        📁 {fileName}
+                    </p>
+
+                    <button
+                        onClick={() => {
+                            setShowColorSelect(false);
+                            setPendingFile(null);
+                            setPendingSGFText(null);
+                        }}
+                        style={{
+                            marginTop: '16px',
+                            padding: '8px 20px',
+                            background: 'transparent',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: '20px',
+                            color: 'var(--text-secondary)',
+                            cursor: 'pointer',
+                            fontFamily: 'inherit',
+                            fontSize: '0.85rem'
+                        }}
+                    >
+                        ← 戻る
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // === 解析中画面 ===
     if (isAnalyzing) {
         return (
             <div className="upload-section" style={{ paddingTop: '120px' }}>
@@ -137,7 +330,7 @@ export default function Upload({ onAnalysisComplete }) {
                             <div
                                 key={i}
                                 className={`loading-step ${i === currentStep ? 'active' :
-                                        i < currentStep ? 'done' : ''
+                                    i < currentStep ? 'done' : ''
                                     }`}
                             >
                                 {i < currentStep ? '✅' : i === currentStep ? '⏳' : '⬜'} {step}
@@ -149,6 +342,7 @@ export default function Upload({ onAnalysisComplete }) {
         );
     }
 
+    // === アップロード画面 ===
     return (
         <div className="upload-section" style={{ paddingTop: '120px' }}>
             <h2 style={{ textAlign: 'center', fontSize: '1.8rem', fontWeight: 800, marginBottom: '8px' }}>

@@ -31,6 +31,7 @@ const upload = multer({
 /**
  * POST /api/analyze
  * SGFファイルを受け取り、解析を実行
+ * playerColor: 'B' or 'W' — ユーザーがどちら側で打ったか
  */
 router.post('/analyze', upload.single('sgf'), async (req, res) => {
     try {
@@ -44,6 +45,9 @@ router.post('/analyze', upload.single('sgf'), async (req, res) => {
             return res.status(400).json({ error: 'SGFファイルまたはSGFテキストを提供してください' });
         }
 
+        // ユーザーの色（デフォルト: 黒）
+        const playerColor = req.body.playerColor === 'W' ? 'W' : 'B';
+
         // バリデーション
         const validation = validateSGF(sgfContent);
         if (!validation.valid) {
@@ -56,17 +60,17 @@ router.post('/analyze', upload.single('sgf'), async (req, res) => {
         // 2. フェーズ分類
         const phaseStats = getPhaseStats(gameData.moves);
 
-        // 3. 勝率推移生成
-        const winRates = generateWinRateCurve(gameData.moves, gameData.metadata);
+        // 3. 勝率推移生成（全手で生成、ユーザー色に合わせて方向を調整）
+        const winRates = generateWinRateCurve(gameData.moves, gameData.metadata, playerColor);
 
-        // 4. スコア計算
-        const scores = calculateScores(gameData.moves, winRates);
+        // 4. スコア計算（ユーザーの手番のみ対象）
+        const scores = calculateScores(gameData.moves, winRates, playerColor);
 
         // 5. 弱点検出
-        const weaknesses = detectWeaknesses(scores, winRates);
+        const weaknesses = detectWeaknesses(scores, winRates, playerColor);
 
-        // 6. プレイスタイル分析
-        const playStyle = analyzePlayStyle(gameData.moves, scores, winRates);
+        // 6. プレイスタイル分析（ユーザーの手番のみ）
+        const playStyle = analyzePlayStyle(gameData.moves, scores, winRates, playerColor);
 
         // 7. 診断文生成
         const diagnostic = generateDiagnostic(scores, weaknesses, playStyle, gameData.metadata);
@@ -119,10 +123,11 @@ router.post('/analyze', upload.single('sgf'), async (req, res) => {
             console.error('DB save error (non-fatal):', dbError.message);
         }
 
-        // レスポンス
+        // レスポンス（playerColor を含める）
         res.json({
             id: analysisId,
             gameId,
+            playerColor,
             metadata: gameData.metadata,
             moves: gameData.moves,
             phaseStats,

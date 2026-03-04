@@ -46,9 +46,10 @@ export const STYLE_LABELS = {
 /**
  * 弱点を検出
  */
-export function detectWeaknesses(scores, winRates) {
+export function detectWeaknesses(scores, winRates, playerColor = 'B') {
     const weaknesses = [];
     const threshold = 65; // 65点以下を弱点とする
+    const userWinRates = winRates.filter(wr => wr.color === playerColor); // ユーザー視点の勝率変動
 
     if (scores.fuseki < threshold) {
         weaknesses.push({
@@ -56,7 +57,7 @@ export function detectWeaknesses(scores, winRates) {
             label: WEAKNESS_LABELS[WEAKNESS_TYPES.FUSEKI_WEAK],
             score: scores.fuseki,
             severity: getSeverity(scores.fuseki),
-            detail: generateFusekiDetail(scores.fuseki, winRates)
+            detail: generateFusekiDetail(scores.fuseki, userWinRates)
         });
     }
 
@@ -66,7 +67,7 @@ export function detectWeaknesses(scores, winRates) {
             label: WEAKNESS_LABELS[WEAKNESS_TYPES.SHIKATSU_WEAK],
             score: scores.shikatsu,
             severity: getSeverity(scores.shikatsu),
-            detail: generateShikatsuDetail(scores.shikatsu, winRates)
+            detail: generateShikatsuDetail(scores.shikatsu, userWinRates)
         });
     }
 
@@ -76,7 +77,7 @@ export function detectWeaknesses(scores, winRates) {
             label: WEAKNESS_LABELS[WEAKNESS_TYPES.YOSE_WEAK],
             score: scores.yose,
             severity: getSeverity(scores.yose),
-            detail: generateYoseDetail(scores.yose, winRates)
+            detail: generateYoseDetail(scores.yose, userWinRates)
         });
     }
 
@@ -132,32 +133,37 @@ export function detectWeaknesses(scores, winRates) {
 /**
  * プレイスタイルを判定
  */
-export function analyzePlayStyle(moves, scores, winRates) {
+export function analyzePlayStyle(moves, scores, winRates, playerColor = 'B') {
+    // 自分（ユーザー側）の手だけを抽出
+    const userMoves = moves.filter(m => m.color === playerColor);
+    const userWinRates = winRates.filter(wr => wr.color === playerColor);
+
     // 中央寄りの手の多さ → 攻撃性
-    const centerMoves = moves.filter(m => {
+    const centerMoves = userMoves.filter(m => {
         if (m.pass) return false;
         const dist = Math.sqrt(Math.pow(m.x - 9, 2) + Math.pow(m.y - 9, 2));
         return dist <= 5;
     }).length;
 
-    const edgeMoves = moves.filter(m => {
+    const edgeMoves = userMoves.filter(m => {
         if (m.pass) return false;
         return m.x <= 3 || m.x >= 15 || m.y <= 3 || m.y >= 15;
     }).length;
 
-    const total = moves.length || 1;
+    const total = userMoves.length || 1;
     const centerRatio = centerMoves / total;
     const edgeRatio = edgeMoves / total;
 
-    // 優勢時のミス率
-    const leadingMoves = winRates.filter(wr => wr.winRate > 55);
+    // 優勢時のミス率（自分が優勢＝winRateが55以上の時の自分の手について調査）
+    const leadingMoves = userWinRates.filter(wr => wr.winRate > 55);
     const leadingBlunders = leadingMoves.filter(wr => wr.delta < -5).length;
     const leadingBlunderRate = leadingMoves.length > 0
         ? leadingBlunders / leadingMoves.length : 0;
 
-    // 劣勢時の無理手率
-    const trailingMoves = winRates.filter(wr => wr.winRate < 45);
-    const trailingBigSwings = trailingMoves.filter(wr => Math.abs(wr.delta) > 5).length;
+    // 劣勢時の無理手率（自分が劣勢＝winRateが45未満）
+    const trailingMoves = userWinRates.filter(wr => wr.winRate < 45);
+    // 悪い状況から、さらに勝率を大きく落とす（焦り・無理手）
+    const trailingBigSwings = trailingMoves.filter(wr => wr.delta < -5).length;
     const trailingAggressionRate = trailingMoves.length > 0
         ? trailingBigSwings / trailingMoves.length : 0;
 
@@ -205,30 +211,31 @@ function getSeverity(score) {
     return 'medium';
 }
 
-function generateFusekiDetail(score, winRates) {
-    const earlyRates = winRates.filter(wr => wr.moveNumber <= 20);
+function generateFusekiDetail(score, userWinRates) {
+    const earlyRates = userWinRates.filter(wr => wr.moveNumber <= 20);
     const avgDrop = earlyRates.reduce((sum, wr) => sum + Math.min(0, wr.delta), 0);
     if (avgDrop < -10) {
-        return '序盤20手以内で大きく勝率を落としています。定石の理解と布石の基本パターンの学習が急務です。';
+        return '序盤に大きく勝率を落としています。定石の理解と布石パターンの学習が急務です。';
     }
-    return '布石段階での勝率低下が目立ちます。序盤の構想力を鍛える必要があります。';
+    return '布石段階での勝率の損が目立ちます。序盤の構想力を鍛える必要があります。';
 }
 
-function generateShikatsuDetail(score, winRates) {
-    const bigDrops = winRates.filter(wr => wr.delta < -10);
+function generateShikatsuDetail(score, userWinRates) {
+    const bigDrops = userWinRates.filter(wr => wr.delta < -10);
     if (bigDrops.length >= 3) {
-        return `${bigDrops.length}回の致命的なミスが検出されました。石の死活に関する基本パターンの反復練習が必要です。`;
+        return `${bigDrops.length}回の致命的な読み抜けが検出されました。石の死活に関する基本パターンの反復練習が必要です。`;
     }
-    return '死活に関する判断ミスが見られます。詰碁の練習で改善が期待できます。';
+    return '死活に直結する大きな判断ミスが見られます。詰碁の練習で改善が期待できます。';
 }
 
-function generateYoseDetail(score, winRates) {
-    const yoseRates = winRates.filter(wr => wr.moveNumber > 150);
-    const reversals = yoseRates.filter(wr => Math.abs(wr.delta) > 3).length;
+function generateYoseDetail(score, userWinRates) {
+    // ユーザーにとってのヨセの手
+    const yoseRates = userWinRates.filter(wr => wr.moveNumber > 150);
+    const reversals = yoseRates.filter(wr => wr.delta < -3).length;
     if (reversals >= 3) {
-        return `ヨセ段階で${reversals}回の大きな勝率変動があります。ヨセの計算力と手順の精度向上が必要です。`;
+        return `ヨセ段階で${reversals}回、大きく損をする手を打っています。ヨセの価値計算と手順の精度向上が必要です。`;
     }
-    return 'ヨセでの損が蓄積しています。ヨセの大小判断とテクニックの学習を推奨します。';
+    return 'ヨセでの損が少しずつ蓄積しています。ヨセの大小判断とテクニックの学習を推奨します。';
 }
 
 function getScoreLabel(key) {

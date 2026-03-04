@@ -9,12 +9,12 @@ import { PHASES, classifyMoves } from './phaseClassifier.js';
 
 /**
  * シミュレーション勝率推移を生成
- * 着手の分布パターンから、リアルな勝率推移をアルゴリズミックに生成
+ * 勝率（winRate）は「ユーザー視点」として常に50%からスタートし、上限100%・下限0%で推移するように生成します。
  */
-export function generateWinRateCurve(moves, metadata) {
+export function generateWinRateCurve(moves, metadata, playerColor = 'B') {
     const totalMoves = moves.length;
     const winRates = [];
-    let currentWinRate = 50.0; // 初期勝率50%
+    let currentWinRate = 50.0; // ユーザー視点の初期勝率50%
 
     // シード値（再現性のため）
     const seed = hashMoves(moves);
@@ -47,31 +47,38 @@ export function generateWinRateCurve(moves, metadata) {
             positionFactor = (9 - centerDist) / 9; // -1 to 1
         }
 
-        // ランダム変動 + 位置ファクター
+        // ランダム変動
         const change = (rng() - 0.5) * volatility + positionFactor * 0.5;
 
         // 大悪手シミュレーション（確率5%で大きなドロップ）
         const blunderChance = rng();
-        let blunderEffect = 0;
+        let blunderEffect = 0; // 手を打ったプレイヤーにとっての影響（マイナス）
         if (blunderChance < 0.05) {
             blunderEffect = -(rng() * 10 + 5); // -5% to -15%
         }
 
-        // 手番による補正（黒なら+、白なら-方向に調整）
-        const turnFactor = move.color === 'B' ? 0.3 : -0.3;
+        // 手番による補正（手を打った側はコミなどの影響で微減しやすいと仮定）
+        const turnFactor = -0.1;
 
-        currentWinRate += change + blunderEffect + turnFactor;
+        // このターンの「手を打った側にとっての勝率変動」
+        const movingPlayerDelta = change + blunderEffect + turnFactor;
+
+        // ユーザー視点での勝率変動に変換
+        const isUserTurn = move.color === playerColor;
+        const userDelta = isUserTurn ? movingPlayerDelta : -movingPlayerDelta; // 相手の悪手は自分の勝率UP
+
+        currentWinRate += userDelta;
 
         // 範囲制限 (5% - 95%)
         currentWinRate = Math.max(5, Math.min(95, currentWinRate));
 
+        // エラーの判定は「手を打った側」にとっての判定
         const isBlunder = blunderEffect < -8;
         const isMistake = blunderEffect < -4 && blunderEffect >= -8;
 
         // 悪手・疑問手の場合、シミュレーションによる正解手(correctMove)を生成
         let correctMove = null;
         if (isBlunder || isMistake) {
-            // 次の着手が存在すればその近く、存在しなければ盤面中央のランダムを推奨手とする
             let nextValidMove = null;
             for (let j = i + 1; j < totalMoves && j < i + 10; j++) {
                 if (!moves[j].pass) { nextValidMove = moves[j]; break; }
@@ -86,21 +93,25 @@ export function generateWinRateCurve(moves, metadata) {
             }
         }
 
+        // WinRates配列には「ユーザー視点の勝率（winRate）」と「手を打ったプレイヤー視点での変動（delta）」を記録する
         winRates.push({
             moveNumber: i + 1,
-            winRate: Math.round(currentWinRate * 100) / 100,
-            delta: Math.round((change + blunderEffect) * 100) / 100,
+            winRate: Math.round(currentWinRate * 100) / 100, // ユーザーの勝率
+            delta: Math.round(movingPlayerDelta * 100) / 100, // 手を打ったプレイヤーにとっての差分
             isBlunder,
             isMistake,
             correctMove,
-            color: move.color
+            color: move.color // どちらの色が打ったか
         });
     }
 
-    // 最終結果に向けて勝率を調整
+    // 最終結果に向けて勝率を調整（ユーザー視点）
     const result = metadata.result || '';
-    if (result.startsWith('B+')) {
-        // 黒勝ち → 最後は60%以上に
+    const userWon = (result.startsWith('B+') && playerColor === 'B') || (result.startsWith('W+') && playerColor === 'W');
+    const opponentWon = (result.startsWith('W+') && playerColor === 'B') || (result.startsWith('B+') && playerColor === 'W');
+
+    if (userWon) {
+        // ユーザー勝ち → 最後は60%以上に
         const lastRate = winRates[winRates.length - 1];
         if (lastRate && lastRate.winRate < 55) {
             const adjustment = (60 - lastRate.winRate) / (totalMoves * 0.3);
@@ -108,8 +119,8 @@ export function generateWinRateCurve(moves, metadata) {
                 winRates[i].winRate = Math.min(95, winRates[i].winRate + adjustment * (i - Math.floor(totalMoves * 0.7)));
             }
         }
-    } else if (result.startsWith('W+')) {
-        // 白勝ち → 最後は40%以下に
+    } else if (opponentWon) {
+        // 相手勝ち → 最後は40%以下に
         const lastRate = winRates[winRates.length - 1];
         if (lastRate && lastRate.winRate > 45) {
             const adjustment = (lastRate.winRate - 40) / (totalMoves * 0.3);
@@ -124,27 +135,35 @@ export function generateWinRateCurve(moves, metadata) {
 
 /**
  * 6項目のスコアを計算（100点満点）
+ * ユーザーの手番のみを対象にスコアを計算します。
  */
-export function calculateScores(moves, winRates) {
-    const classified = classifyMoves(moves);
+export function calculateScores(moves, winRates, playerColor = 'B') {
+    // 自分の着手と、自分が打った盤面の勝率の推移だけを抽出
+    const userMoves = moves.filter(m => m.color === playerColor);
+    const userWinRates = winRates.filter(wr => wr.color === playerColor);
 
-    // 1. 布石力 - 序盤の安定度
-    const fusekiScore = calcFusekiScore(classified[PHASES.FUSEKI], winRates, moves.length);
+    // 全着手手数を基準にするためのトータル（フェーズの比率計算用）
+    const totalMoves = moves.length;
 
-    // 2. 中盤戦闘力 - 中盤での勝率維持・向上
-    const chubanScore = calcChubanScore(classified[PHASES.CHUBAN], winRates, moves.length);
+    const classified = classifyMoves(userMoves); // 自分の手だけを分類
 
-    // 3. 死活精度 - 大きなブランダーの少なさ
-    const shikatsuScore = calcShikatsuScore(winRates);
+    // 1. 布石力 - 序盤の自分の安定度
+    const fusekiScore = calcFusekiScore(classified[PHASES.FUSEKI], userWinRates, totalMoves);
 
-    // 4. ヨセ精度 - 終盤での安定度
-    const yoseScore = calcYoseScore(classified[PHASES.YOSE], winRates, moves.length);
+    // 2. 中盤戦闘力 - 中盤での自分の勝率維持・悪手の少なさ
+    const chubanScore = calcChubanScore(classified[PHASES.CHUBAN], userWinRates, totalMoves);
 
-    // 5. 安定性 - 勝率の変動幅の小ささ
-    const stabilityScore = calcStabilityScore(winRates);
+    // 3. 死活精度 - 自分の大きなブランダーの少なさ
+    const shikatsuScore = calcShikatsuScore(userWinRates);
 
-    // 6. 判断力 - 好手の多さ / 悪手の少なさ
-    const judgmentScore = calcJudgmentScore(winRates);
+    // 4. ヨセ精度 - 終盤での自分の安定度
+    const yoseScore = calcYoseScore(classified[PHASES.YOSE], userWinRates, totalMoves);
+
+    // 5. 安定性 - 自分の手による勝率の変動幅の小ささ
+    const stabilityScore = calcStabilityScore(userWinRates);
+
+    // 6. 判断力 - 自分の悪手の少なさ
+    const judgmentScore = calcJudgmentScore(userWinRates);
 
     return {
         fuseki: Math.round(fusekiScore),
@@ -159,53 +178,57 @@ export function calculateScores(moves, winRates) {
     };
 }
 
-function calcFusekiScore(fusekiMoves, winRates, totalMoves) {
+function calcFusekiScore(fusekiMoves, userWinRates, totalMoves) {
     if (fusekiMoves.length === 0) return 70;
     const end = Math.floor(totalMoves / 3);
-    const fusekiRates = winRates.filter(wr => wr.moveNumber <= end);
-    const avgDelta = fusekiRates.reduce((sum, wr) => sum + Math.abs(wr.delta), 0) / (fusekiRates.length || 1);
-    // 小さい変動 = 高スコア
-    return Math.max(20, Math.min(98, 90 - avgDelta * 8));
+    const fusekiRates = userWinRates.filter(wr => wr.moveNumber <= end);
+    // 自分にとってマイナスになった変動の平均を取る（悪手率）
+    const negativeDeltas = fusekiRates.filter(wr => wr.delta < 0);
+    const avgDrop = negativeDeltas.reduce((sum, wr) => sum + Math.abs(wr.delta), 0) / (fusekiRates.length || 1);
+    return Math.max(20, Math.min(98, 92 - avgDrop * 8));
 }
 
-function calcChubanScore(chubanMoves, winRates, totalMoves) {
+function calcChubanScore(chubanMoves, userWinRates, totalMoves) {
     if (chubanMoves.length === 0) return 70;
     const start = Math.floor(totalMoves / 3);
     const end = Math.floor(totalMoves * 2 / 3);
-    const chubanRates = winRates.filter(wr => wr.moveNumber > start && wr.moveNumber <= end);
+    const chubanRates = userWinRates.filter(wr => wr.moveNumber > start && wr.moveNumber <= end);
     const blunders = chubanRates.filter(wr => wr.isBlunder).length;
     const mistakes = chubanRates.filter(wr => wr.isMistake).length;
-    const baseScore = 85;
-    return Math.max(20, Math.min(98, baseScore - blunders * 15 - mistakes * 5));
+    const baseScore = 88;
+    return Math.max(20, Math.min(98, baseScore - blunders * 15 - mistakes * 4));
 }
 
-function calcShikatsuScore(winRates) {
-    const bigDrops = winRates.filter(wr => wr.delta < -8).length;
-    const medDrops = winRates.filter(wr => wr.delta < -5 && wr.delta >= -8).length;
-    return Math.max(20, Math.min(98, 90 - bigDrops * 20 - medDrops * 5));
+function calcShikatsuScore(userWinRates) {
+    const bigDrops = userWinRates.filter(wr => wr.delta < -8).length;
+    const medDrops = userWinRates.filter(wr => wr.delta < -5 && wr.delta >= -8).length;
+    return Math.max(20, Math.min(98, 92 - bigDrops * 20 - medDrops * 6));
 }
 
-function calcYoseScore(yoseMoves, winRates, totalMoves) {
+function calcYoseScore(yoseMoves, userWinRates, totalMoves) {
     if (yoseMoves.length === 0) return 70;
     const start = Math.floor(totalMoves * 2 / 3);
-    const yoseRates = winRates.filter(wr => wr.moveNumber > start);
-    const avgDelta = yoseRates.reduce((sum, wr) => sum + Math.abs(wr.delta), 0) / (yoseRates.length || 1);
-    return Math.max(20, Math.min(98, 92 - avgDelta * 12));
+    const yoseRates = userWinRates.filter(wr => wr.moveNumber > start);
+    const negativeDeltas = yoseRates.filter(wr => wr.delta < 0);
+    const avgDrop = negativeDeltas.reduce((sum, wr) => sum + Math.abs(wr.delta), 0) / (yoseRates.length || 1);
+    return Math.max(20, Math.min(98, 94 - avgDrop * 12));
 }
 
-function calcStabilityScore(winRates) {
-    if (winRates.length === 0) return 70;
-    const deltas = winRates.map(wr => Math.abs(wr.delta));
-    const variance = deltas.reduce((sum, d) => sum + d * d, 0) / deltas.length;
-    return Math.max(20, Math.min(98, 95 - Math.sqrt(variance) * 10));
+function calcStabilityScore(userWinRates) {
+    if (userWinRates.length === 0) return 70;
+    // 自分の手の変動（特にマイナス方向）のバラツキをみる
+    const deltas = userWinRates.filter(wr => wr.delta < 0).map(wr => Math.abs(wr.delta));
+    if (deltas.length === 0) return 98;
+    const variance = deltas.reduce((sum, d) => sum + d * d, 0) / userWinRates.length;
+    return Math.max(20, Math.min(98, 96 - Math.sqrt(variance) * 8));
 }
 
-function calcJudgmentScore(winRates) {
-    const totalBlunders = winRates.filter(wr => wr.isBlunder).length;
-    const totalMistakes = winRates.filter(wr => wr.isMistake).length;
-    const total = winRates.length || 1;
+function calcJudgmentScore(userWinRates) {
+    const totalBlunders = userWinRates.filter(wr => wr.isBlunder).length;
+    const totalMistakes = userWinRates.filter(wr => wr.isMistake).length;
+    const total = userWinRates.length || 1;
     const errorRate = (totalBlunders * 2 + totalMistakes) / total;
-    return Math.max(20, Math.min(98, 90 - errorRate * 200));
+    return Math.max(20, Math.min(98, 93 - errorRate * 200));
 }
 
 // ヘルパー関数

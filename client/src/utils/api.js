@@ -2,10 +2,13 @@ const API_BASE = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}
 
 /**
  * SGFファイルを解析APIに送信
+ * @param {File} file - SGFファイル
+ * @param {string} playerColor - ユーザーの色 ('B' or 'W')
  */
-export async function analyzeSGF(file) {
+export async function analyzeSGF(file, playerColor = 'B') {
     const formData = new FormData();
     formData.append('sgf', file);
+    formData.append('playerColor', playerColor);
 
     const response = await fetch(`${API_BASE}/analyze`, {
         method: 'POST',
@@ -22,12 +25,14 @@ export async function analyzeSGF(file) {
 
 /**
  * SGFテキストを直接解析
+ * @param {string} sgfText - SGFテキスト
+ * @param {string} playerColor - ユーザーの色 ('B' or 'W')
  */
-export async function analyzeSGFText(sgfText) {
+export async function analyzeSGFText(sgfText, playerColor = 'B') {
     const response = await fetch(`${API_BASE}/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sgf: sgfText })
+        body: JSON.stringify({ sgf: sgfText, playerColor })
     });
 
     if (!response.ok) {
