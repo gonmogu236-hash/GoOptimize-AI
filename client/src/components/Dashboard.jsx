@@ -15,6 +15,9 @@ export default function Dashboard({ data, onNewAnalysis }) {
     const reportRef = useRef(null);
 
     useEffect(() => {
+        // 解析結果が表示されたら一番上にスクロール
+        window.scrollTo(0, 0);
+
         // 決済完了判定 (MVP用)
         const params = new URLSearchParams(window.location.search);
         if (params.get('payment') === 'success') {

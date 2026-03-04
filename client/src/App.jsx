@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Header from './components/Header';
 import Landing from './components/Landing';
 import Upload from './components/Upload';
@@ -8,6 +8,11 @@ import './index.css';
 function App() {
     const [view, setView] = useState('landing'); // landing | upload | dashboard
     const [analysisResult, setAnalysisResult] = useState(null);
+
+    // 画面遷移時に一番上にスクロール
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [view]);
 
     const handleStartAnalysis = () => {
         setView('upload');
