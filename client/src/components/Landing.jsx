@@ -28,6 +28,9 @@ export default function Landing({ onStart }) {
                     <a className="btn btn-secondary" href="#features">
                         📖 機能を見る
                     </a>
+                    <a className="btn btn-secondary" href="#sgf-guide">
+                        📁 SGFファイルとは？
+                    </a>
                 </div>
             </section>
 
@@ -96,6 +99,82 @@ export default function Landing({ onStart }) {
                             数秒で詳細な解析レポートが完成。
                             アカウント登録不要で今すぐ使えます。
                         </p>
+                    </div>
+                </div>
+            </section>
+
+            {/* SGFファイルガイド */}
+            <section className="sgf-guide" id="sgf-guide">
+                <h2 className="features-title">📁 SGFファイルとは？</h2>
+                <p className="features-subtitle">
+                    SGF（Smart Game Format）は、囲碁の棋譜を保存するための国際標準フォーマットです。<br />
+                    多くの囲碁ソフト・アプリ・オンライン対局サイトで対応しています。
+                </p>
+
+                <div className="sgf-section">
+                    <h3 className="sgf-section-title">🖥️ 対応ソフト・サービス一覧</h3>
+                    <div className="sgf-apps-grid">
+                        <div className="sgf-category">
+                            <h4>🖥️ PC対局ソフト</h4>
+                            <div className="sgf-app-list">
+                                <div className="sgf-app-card"><span className="sgf-app-emoji">🤖</span><span>KaTrain</span><span className="sgf-app-tag">AI搭載・無料</span></div>
+                                <div className="sgf-app-card"><span className="sgf-app-emoji">📝</span><span>Sabaki</span><span className="sgf-app-tag">モダンUI</span></div>
+                                <div className="sgf-app-card"><span className="sgf-app-emoji">🔧</span><span>GoGui</span><span className="sgf-app-tag">高機能</span></div>
+                                <div className="sgf-app-card"><span className="sgf-app-emoji">🐉</span><span>Drago</span><span className="sgf-app-tag">データベース</span></div>
+                                <div className="sgf-app-card"><span className="sgf-app-emoji">✏️</span><span>GoWrite</span><span className="sgf-app-tag">出版向け</span></div>
+                                <div className="sgf-app-card"><span className="sgf-app-emoji">🎮</span><span>WinGo</span><span className="sgf-app-tag">AI対局</span></div>
+                                <div className="sgf-app-card"><span className="sgf-app-emoji">🏯</span><span>棋院エディタ</span><span className="sgf-app-tag">日本棋院公式</span></div>
+                            </div>
+                        </div>
+
+                        <div className="sgf-category">
+                            <h4>🌐 オンライン対局・共有</h4>
+                            <div className="sgf-app-list">
+                                <div className="sgf-app-card"><span className="sgf-app-emoji">🌍</span><span>OGS</span><span className="sgf-app-tag">海外最大級</span></div>
+                                <div className="sgf-app-card"><span className="sgf-app-emoji">🦊</span><span>野狐囲碁</span><span className="sgf-app-tag">中国最大級</span></div>
+                                <div className="sgf-app-card"><span className="sgf-app-emoji">🏆</span><span>KGS</span><span className="sgf-app-tag">老舗</span></div>
+                                <div className="sgf-app-card"><span className="sgf-app-emoji">🔲</span><span>BesoGo</span><span className="sgf-app-tag">Webエディタ</span></div>
+                                <div className="sgf-app-card"><span className="sgf-app-emoji">🐦</span><span>つぶや棋譜</span><span className="sgf-app-tag">SNS共有</span></div>
+                            </div>
+                        </div>
+
+                        <div className="sgf-category">
+                            <h4>📱 スマホアプリ</h4>
+                            <div className="sgf-app-list">
+                                <div className="sgf-app-card"><span className="sgf-app-emoji">⚡</span><span>囲碁クエスト</span><span className="sgf-app-tag">対局アプリ</span></div>
+                                <div className="sgf-app-card"><span className="sgf-app-emoji">👥</span><span>みんなの囲碁</span><span className="sgf-app-tag">初心者向け</span></div>
+                                <div className="sgf-app-card"><span className="sgf-app-emoji">🎓</span><span>Go Expert</span><span className="sgf-app-tag">SGFエディタ</span></div>
+                                <div className="sgf-app-card"><span className="sgf-app-emoji">📖</span><span>EasyGo</span><span className="sgf-app-tag">詰碁+SGF</span></div>
+                                <div className="sgf-app-card"><span className="sgf-app-emoji">🧩</span><span>囲碁エキスパート</span><span className="sgf-app-tag">多機能</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="sgf-section">
+                    <h3 className="sgf-section-title">📥 SGFファイルの取得方法</h3>
+                    <div className="sgf-steps">
+                        <div className="sgf-step">
+                            <div className="sgf-step-number">1</div>
+                            <div className="sgf-step-content">
+                                <h4>対局する</h4>
+                                <p>上記の対応アプリ・サイトで囲碁を対局します。OGSや野狐囲碁などのオンライン対局サイトがおすすめです。</p>
+                            </div>
+                        </div>
+                        <div className="sgf-step">
+                            <div className="sgf-step-number">2</div>
+                            <div className="sgf-step-content">
+                                <h4>棋譜をダウンロード</h4>
+                                <p>対局終了後、「棋譜をダウンロード」や「SGFで保存」ボタンをクリック。<code>.sgf</code> ファイルがダウンロードされます。</p>
+                            </div>
+                        </div>
+                        <div className="sgf-step">
+                            <div className="sgf-step-number">3</div>
+                            <div className="sgf-step-content">
+                                <h4>GoOptimize AI で解析</h4>
+                                <p>ダウンロードした <code>.sgf</code> ファイルを、このサイトにドラッグ＆ドロップするだけ！数秒で詳細な解析結果を表示します。</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>

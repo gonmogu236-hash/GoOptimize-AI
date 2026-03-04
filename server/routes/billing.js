@@ -26,7 +26,7 @@ router.post('/create-checkout-session', async (req, res) => {
                         currency: 'jpy',
                         product_data: {
                             name: 'GoOptimize AI プレミアム解析',
-                            description: '詳細レポート・推奨正解手の表示・PDF出力',
+                            description: '詳細診断・学習プラン・PDF出力',
                         },
                         unit_amount: 300,
                     },
